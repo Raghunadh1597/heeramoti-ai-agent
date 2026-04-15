@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Heeramoti AI Agent</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #f4f4f9; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        #chat-container { width: 400px; background: white; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.1); overflow: hidden; display: flex; flex-direction: column; }
+        #chat-header { background: #2c3e50; color: white; padding: 15px; text-align: center; font-weight: bold; }
+        #chat-box { height: 400px; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
+        .message { padding: 10px; border-radius: 8px; max-width: 80%; }
+        .user-message { background: #3498db; color: white; align-self: flex-end; }
+        .bot-message { background: #ecf0f1; color: #333; align-self: flex-start; }
+        #input-area { display: flex; border-top: 1px solid #ddd; }
+        #user-input { flex: 1; padding: 15px; border: none; outline: none; }
+        #send-btn { background: #2c3e50; color: white; border: none; padding: 0 20px; cursor: pointer; font-weight: bold; }
+        #send-btn:hover { background: #1a252f; }
+    </style>
+</head>
+<body>
+
+<div id="chat-container">
+    <div id="chat-header">Heeramoti Receptionist</div>
+    <div id="chat-box"></div>
+    <div id="input-area">
+        <input type="text" id="user-input" placeholder="Type your message..." autocomplete="off">
+        <button id="send-btn" onclick="sendMessage()">Send</button>
+    </div>
+</div>
+
+<script>
+    const chatBox = document.getElementById("chat-box");
+    const userInput = document.getElementById("user-input");
+
+    // Allow hitting "Enter" to send
+    userInput.addEventListener("keypress", function(event) {
+        if (event.key === "Enter") sendMessage();
+    });
+
+    async function sendMessage() {
+        const text = userInput.value.trim();
+        if (!text) return;
+
+        // Display user message
+        appendMessage(text, "user-message");
+        userInput.value = "";
+
+        // 1. Create the typing indicator right before we talk to the server
+        const typingDiv = document.createElement("div");
+        typingDiv.className = "message bot-message";
+        typingDiv.id = "typing-indicator";
+        typingDiv.innerText = "Receptionist is typing...";
+        chatBox.appendChild(typingDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+
+        // 2. Talk to the Python Server
+        try {
+            const response = await fetch("http://127.0.0.1:8000/chat", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text, user_id: "user_1" })
+            });
+            const data = await response.json();
+            
+            // 3a. Destroy the indicator on SUCCESS
+            document.getElementById("typing-indicator").remove();
+            
+            // Display AI response
+            appendMessage(data.response, "bot-message");
+            
+        } catch (error) {
+            // 3b. Destroy the indicator on FAILURE too!
+            if (document.getElementById("typing-indicator")) {
+                document.getElementById("typing-indicator").remove();
+            }
+            
+            appendMessage("Error connecting to Python server.", "bot-message");
+        }
+    }
+
+    function appendMessage(text, className) {
+        const msgDiv = document.createElement("div");
+        msgDiv.className = "message " + className;
+        msgDiv.innerText = text;
+        chatBox.appendChild(msgDiv);
+        chatBox.scrollTop = chatBox.scrollHeight;
+    }
+</script>
+
+</body>
+</html>
