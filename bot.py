@@ -4,8 +4,7 @@ from dotenv import load_dotenv
 from google import genai
 import requests
 
-DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1481922757468885135/G2hEgHtGyrhvX6ZAonY2tST2xMVTqB6boda457dyHrwW7lj0hqS15rtIwl9OGDqQxZ_u"
-
+DISCORD_WEBHOOK_URL = os.getenv("DISCORD_WEBHOOK_URL")
 
 load_dotenv()
 
