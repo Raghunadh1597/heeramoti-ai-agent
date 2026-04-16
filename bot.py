@@ -2,7 +2,9 @@ import os
 import sqlite3
 from dotenv import load_dotenv
 from google import genai
+import requests
 
+DISCORD_WEBHOOK_URL = "https://discord.com/api/webhooks/1481922757468885135/G2hEgHtGyrhvX6ZAonY2tST2xMVTqB6boda457dyHrwW7lj0hqS15rtIwl9OGDqQxZ_u"
 
 
 load_dotenv()
@@ -70,7 +72,20 @@ def save_lead(customer_name : str, phone_number : str = "Refused"):
     cursor.execute("INSERT INTO leads(customer_name, phone_number) VALUES(?,?)",
                    (customer_name, phone_number))
     conn.commit()
-    return "Lead successfully saved to database. Thank the customer."
+
+    # --- NEW WEBHOOK ENGINE ---
+    alert_message = f"🚨 **NEW HIGH-TICKET LEAD!** 🚨\n**Name:** {customer_name}\n**Phone:** {phone_number}\n*Check the database for full details.*"
+
+    payload = {
+        "content" : alert_message
+    }
+
+    try:
+        requests.post(DISCORD_WEBHOOK_URL, json=payload)
+    except Exception as e:
+        print(f"Webhook failed: {e}") # Fails silently so it doesn't crash the bot
+    # --------------------------
+    return "Lead successfully saved to database and sales team notified. Thank the customer."
 
 def get_ai_response(user_id, content):
 
@@ -82,7 +97,7 @@ def get_ai_response(user_id, content):
     conn.commit()
 
     # Grab the 6 most recent messages (backwards)
-    cursor.execute("SELECT role, content FROM messages WHERE user_id=? ORDER BY id DESC LIMIT 6",
+    cursor.execute("SELECT role, content FROM messages WHERE user_id=? ORDER BY rowid DESC LIMIT 6",
                     (user_id,)
     )
     all_chat_history = cursor.fetchall()
